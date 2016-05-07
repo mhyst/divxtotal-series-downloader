@@ -2,11 +2,12 @@
 
 SERVER="192.168.0.10:9091 --auth admin:admin"
 DIR=~/bin/scripts/series/titles/
+LOGFILE=~/bin/scripts/dxtotal/log
 
 VERSION="0.0.6"
 
 echo "down $VERSION - Copyleft (GPL v3) Julio Serrano 2016"
-echo "Revisar nuevas series en elitetorrent y descargar las indicadas"
+echo "Revisar nuevas series en DivxTotal y descargar las indicadas"
 echo "según la misma estructura de clat."
 echo
 
@@ -121,13 +122,19 @@ function isDownloaded {
 
 	#Le preguntamos a transmission si ya tiene el archivo
 	res=`transmission-remote $SERVER --list | grep "$name" | grep "$episodio"`
-	#res=`transmission-remote $SERVER --list | grep "$name"`
 	
 	#echo "$res" >&2
 	if [[ ${#res} > 0 ]]; then
 		echo true
 	else
-		echo false
+		#Hacemos la misma comprobación, sustituyendo espacios con puntos
+		name=`echo "$name" | tr " " .`
+		res=`transmission-remote $SERVER --list | grep "$name" | grep "$episodio"`
+		if [[ ${#res} > 0 ]]; then
+			echo true
+		else
+			echo false
+		fi
 	fi
 }
 
@@ -164,6 +171,9 @@ function check {
 	folder=`cat "$DIR$series"`
 	#Como quitamos "magnet:" de la cadena, después tenemos que aádir magnet:
 	transmission-remote $SERVER --add "/tmp/torrent.torrent" --download-dir "$folder"
+
+	#Registramos la descarga
+	echo "`date +"%d/%m/%Y %H:%M"` $name" >> $LOGFILE
 	rm /tmp/torrent.torrent
 	rm /tmp/divxtotal3.txt
 }
@@ -176,7 +186,7 @@ else
 	urlfrom="http://www.divxtotal.com/buscar.php?busqueda=$1 $2 $3 $4 $5 $6 $7 $8 $9"
 fi
 
-echo "Descargando portada de elitetorrent..."
+echo "Descargando portada de DivxTotal..."
 echo "$urlfrom"
 curl "$urlfrom" | grep '<a href="/series/*' | iconv --from-code=ISO-8859-1 --to-code=utf-8 > /tmp/divxtotal.txt
 FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
