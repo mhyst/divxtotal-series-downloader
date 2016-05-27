@@ -116,13 +116,13 @@ function isDownloaded {
 		echo true
 	else
 		#Hacemos la misma comprobación, sustituyendo espacios con puntos
-		local name=`echo "$serie" | tr " " .`
-		res=`transmission-remote $SERVER --list | grep "$name" | grep "$episode"`
-		if [[ ${#res} > 0 ]]; then
-			echo true
-		else
+		# local name=`echo "$serie" | tr " " .`
+		# res=`transmission-remote $SERVER --list | grep "$name" | grep "$episode"`
+		# if [[ ${#res} > 0 ]]; then
+		# 	echo true
+		# else
 			echo false
-		fi
+		# fi
 	fi
 }
 
