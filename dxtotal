@@ -180,15 +180,15 @@ function check {
 
 	echo "Descargando página de $name"
 	#Extraemos la url de la etiqueta href
-	local url=`echo "$line" | grep '<a href="/series/*' | grep "$name" | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`
+	local url=`echo "$line" | grep -Po "href='.*?'" | sed "s/\(href='\|'\)//g"`
 	echo ">>> URL: $url"
 
-	docurl "http://www.divxtotal.com$url" "/tmp/divxtotal3.txt"
+	docurl "$url" "/tmp/divxtotal3.txt"
 	#curl "http://www.divxtotal.com$url" > /tmp/divxtotal3.txt
 	#iconv --from-code=ISO-8859-1 --to-code=utf-8 /tmp/divxtotal3.txt > /tmp/divxtotal4.txt
 	#local url2=`cat /tmp/divxtotal3.txt | grep "$name" | grep '<a href="/torrents_tor/*' | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`
 	echo "Nombre: >$name<"
-	local url2=`cat /tmp/divxtotal3.txt | grep "$name" | grep '<a href="/torrents_tor/*' | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`	
+	local url2=`cat /tmp/divxtotal3.txt | grep "$name" | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`	
 
 	if [[ $url2 == "" ]]; then
 		echo ">>> No se ha podido obtener la URL del torrent"
@@ -199,7 +199,7 @@ function check {
 	
 	echo ">>> Descargando torrent"
 	
-	curl "http://www.divxtotal.com$url2" > "/tmp/torrent.torrent"
+	curl "$url2" > "/tmp/torrent.torrent"
 
 	echo ">>> Añadiendo a transmission"
 
@@ -214,7 +214,7 @@ function check {
 }
 
 if [[ $1 = "" ]]; then
-	urlfrom="http://www.divxtotal.com/ultimos/pagina/1/"
+	urlfrom="http://www.divxtotal.com/series/"
 elif [[ $1 == "-u" ]]; then
 	urlfrom="$2"
 else
@@ -223,32 +223,33 @@ fi
 
 echo "Descargando portada de DivxTotal..."
 echo "$urlfrom"
-curl "$urlfrom" | grep '<a href="/series/*' | iconv --from-code=ISO-8859-1 --to-code=utf-8 > /tmp/divxtotal.txt
+curl "$urlfrom" | grep '<p class="seccontnom">' | iconv --from-code=ISO-8859-1 --to-code=utf-8 > /tmp/divxtotal.txt
 FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
 while [[ $FILESIZE == 0 ]]; do
 	echo "La descarga ha fallado."
 	echo "Esperando 5 segundos antes de volver a intentarlo..."
 	sleep 5
-	curl "$urlfrom" | grep '<a href="/series/*' | iconv --from-code=ISO-8859-1 --to-code=utf-8 > /tmp/divxtotal.txt
+	curl "$urlfrom" | grep '<p class="seccontnom">' | iconv --from-code=ISO-8859-1 --to-code=utf-8 > /tmp/divxtotal.txt
 	FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
 done
 echo  "Descargada\n"
-
+cat /tmp/divxtotal.txt | grep -oP '<a.*?</a>' > /tmp/divxtotal2.txt
 echo "Procesando..."
 # Link filedescriptor 10 with stdin
 exec 10<&0
 # stdin replaced with a file supplied as a first argument
-exec < /tmp/divxtotal.txt
+exec < /tmp/divxtotal2.txt
 
 let count=0
 
 while read line; do
 	#Queremos la etiqueta title, pero sólo su contenido
-	name=`echo "$line" | grep -Po 'title=".*?"' | sed 's/\(title="\|"\)//g'`
+	name=`echo "$line" | grep -Po '">.*?</a>' | sed 's/\(">\|<\/a>\)//g'`
 	if [[ $name != "Series" ]]; then
 		#name=${name%?}
 		name="$(echo -e "${name}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
     	echo ">$name<"
+    	#echo "#$line#"
     	((count++))
     	#Procesamos la serie. La variable line se necesitará después
     	isSeries "$name" "$line"
