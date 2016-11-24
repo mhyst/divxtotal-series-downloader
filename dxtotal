@@ -4,7 +4,7 @@ SERVER="192.168.0.10:9091 --auth admin:admin"
 DIR=~/bin/scripts/series/titles/
 LOGFILE=~/bin/scripts/dxtotal/log
 
-VERSION="0.1.1"
+VERSION="0.2.0"
 
 echo "down $VERSION - Copyleft (GPL v3) Julio Serrano 2016"
 echo "Revisar nuevas series en DivxTotal y descargar las indicadas"
@@ -88,13 +88,13 @@ function docurl {
 	local urlfrom="$1"
 	local filename="$2"
 
-	curl "$urlfrom" | iconv --from-code=ISO-8859-1 --to-code=utf-8 > "$filename"
+	curl "$urlfrom" > "$filename"
 	FILESIZE=$(stat -c%s "$filename")
 	while [[ $FILESIZE == 0 ]]; do
 		echo "La descarga ha fallado."
 		echo "Esperando 5 segundos antes de volver a intentarlo..."
 		sleep 5
-		curl "$urlfrom" | iconv --from-code=ISO-8859-1 --to-code=utf-8 > "$filename"
+		curl "$urlfrom" > "$filename"
 		FILESIZE=$(stat -c%s "$filename")
 	done	
 }
@@ -180,7 +180,7 @@ function check {
 
 	echo "Descargando página de $name"
 	#Extraemos la url de la etiqueta href
-	local url=`echo "$line" | grep -Po "href='.*?'" | sed "s/\(href='\|'\)//g"`
+	local url=`echo "$line" | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`
 	echo ">>> URL: $url"
 
 	docurl "$url" "/tmp/divxtotal3.txt"
@@ -214,7 +214,7 @@ function check {
 }
 
 if [[ $1 = "" ]]; then
-	urlfrom="http://www.divxtotal.com/series/"
+	urlfrom="http://www.divxtotal.com"
 elif [[ $1 == "-u" ]]; then
 	urlfrom="$2"
 else
@@ -223,13 +223,13 @@ fi
 
 echo "Descargando portada de DivxTotal..."
 echo "$urlfrom"
-curl "$urlfrom" | grep '<p class="seccontnom">' | iconv --from-code=ISO-8859-1 --to-code=utf-8 > /tmp/divxtotal.txt
+curl "$urlfrom" | grep -Po '<a onmouseover="javascript:cambia_series.*?</a>' > /tmp/divxtotal.txt
 FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
 while [[ $FILESIZE == 0 ]]; do
 	echo "La descarga ha fallado."
 	echo "Esperando 5 segundos antes de volver a intentarlo..."
 	sleep 5
-	curl "$urlfrom" | grep '<p class="seccontnom">' | iconv --from-code=ISO-8859-1 --to-code=utf-8 > /tmp/divxtotal.txt
+	curl "$urlfrom" | grep -Po '<a onmouseover="javascript:cambia_series.*?</a>' > /tmp/divxtotal.txt
 	FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
 done
 echo  "Descargada\n"
