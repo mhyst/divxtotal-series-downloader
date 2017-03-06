@@ -4,7 +4,7 @@ SERVER="192.168.0.10:9091 --auth admin:admin"
 DIR=~/bin/scripts/series/titles/
 LOGFILE=~/bin/scripts/dxtotal/log
 
-VERSION="0.2.0"
+VERSION="0.2.2"
 
 echo "down $VERSION - Copyleft (GPL v3) Julio Serrano 2016"
 echo "Revisar nuevas series en DivxTotal y descargar las indicadas"
