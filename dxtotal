@@ -4,9 +4,9 @@ SERVER="192.168.0.10:9091 --auth admin:admin"
 DIR=~/bin/scripts/series/titles/
 LOGFILE=~/bin/scripts/dxtotal/log
 
-VERSION="0.2.2"
+VERSION="0.3.1"
 
-echo "down $VERSION - Copyleft (GPL v3) Julio Serrano 2016"
+echo "dxtotal $VERSION - Copyleft (GPL v3) Julio Serrano 2016"
 echo "Revisar nuevas series en DivxTotal y descargar las indicadas"
 echo "según la misma estructura de clat."
 echo
@@ -76,7 +76,7 @@ function isSeries {
 				# else
 					echo "    No lo tenemos"
 					#Llamamos a la funcion que descargará el archivo
-					check "$name" "$line" "$serie"
+					check "$name" "$line" "$serie" "$episode"
 				#fi
 			fi
 			break
@@ -177,18 +177,26 @@ function check {
 	local name="$1"
 	local line="$2"
 	local series="$3"
+	local episode="$4"
 
-	echo "Descargando página de $name"
+	#echo "Depuración..."
+	#echo "$line"
+	#echo "$name"
+	#echo "$series"
+	#echo "Fin depuración"
+
+	echo "Descargando página de $series"
 	#Extraemos la url de la etiqueta href
-	local url=`echo "$line" | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`
+	local url=`echo "$line" | grep -Po "href='.*?'" | sed "s/\(href='\|'\)//g"`
 	echo ">>> URL: $url"
 
 	docurl "$url" "/tmp/divxtotal3.txt"
 	#curl "http://www.divxtotal.com$url" > /tmp/divxtotal3.txt
 	#iconv --from-code=ISO-8859-1 --to-code=utf-8 /tmp/divxtotal3.txt > /tmp/divxtotal4.txt
 	#local url2=`cat /tmp/divxtotal3.txt | grep "$name" | grep '<a href="/torrents_tor/*' | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`
-	echo "Nombre: >$name<"
-	local url2=`cat /tmp/divxtotal3.txt | grep "$name" | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`	
+	#echo "Nombre: >$name<"
+	#echo "$series$episode"
+	local url2=`cat /tmp/divxtotal3.txt | grep -m 1 "$episode" | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`
 
 	if [[ $url2 == "" ]]; then
 		echo ">>> No se ha podido obtener la URL del torrent"
@@ -213,8 +221,10 @@ function check {
 	rm /tmp/divxtotal3.txt
 }
 
+fetchmore=false
 if [[ $1 = "" ]]; then
-	urlfrom="http://www.divxtotal.com"
+	urlfrom="http://www.divxtotal.com/serie/"
+	fetchmore=true
 elif [[ $1 == "-u" ]]; then
 	urlfrom="$2"
 else
@@ -223,15 +233,29 @@ fi
 
 echo "Descargando portada de DivxTotal..."
 echo "$urlfrom"
-curl "$urlfrom" | grep -Po '<a onmouseover="javascript:cambia_series.*?</a>' > /tmp/divxtotal.txt
-FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
-while [[ $FILESIZE == 0 ]]; do
-	echo "La descarga ha fallado."
-	echo "Esperando 5 segundos antes de volver a intentarlo..."
-	sleep 5
-	curl "$urlfrom" | grep -Po '<a onmouseover="javascript:cambia_series.*?</a>' > /tmp/divxtotal.txt
-	FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
-done
+
+docurl "$urlfrom" "/tmp/divxtotaltemp.txt"
+
+#Shall we fetch more pages than just the first?
+if $fetchmore; then
+	docurl "http://www.divxtotal.com/serie/page/2/" "/tmp/divxtotaltemp2.txt"
+	docurl "http://www.divxtotal.com/serie/page/3/" "/tmp/divxtotaltemp3.txt"
+	cat /tmp/divxtotaltemp2.txt >> /tmp/divxtotaltemp.txt
+	cat /tmp/divxtotaltemp3.txt >> /tmp/divxtotaltemp.txt
+fi
+
+#curl "$urlfrom" | grep -Po '<a onmouseover="javascript:cambia_series.*?</a>' > /tmp/divxtotal.txt
+cat /tmp/divxtotaltemp.txt | grep -Po '<p class="seccontnom">.*?</p>' > /tmp/divxtotal.txt
+
+
+#FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
+#while [[ $FILESIZE == 0 ]]; do
+#	echo "La descarga ha fallado."
+#	echo "Esperando 5 segundos antes de volver a intentarlo..."
+#	sleep 5
+#	curl "$urlfrom" | grep -Po '<p class="seccontnom">.*?</p>' > /tmp/divxtotal.txt
+#	FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
+#done
 echo  "Descargada\n"
 cat /tmp/divxtotal.txt | grep -oP '<a.*?</a>' > /tmp/divxtotal2.txt
 echo "Procesando..."
