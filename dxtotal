@@ -223,12 +223,12 @@ function check {
 
 fetchmore=false
 if [[ $1 = "" ]]; then
-	urlfrom="http://www.divxtotal.com/serie/"
+	urlfrom="http://www.divxtotal.net/series/"
 	fetchmore=true
 elif [[ $1 == "-u" ]]; then
 	urlfrom="$2"
 else
-	urlfrom="http://www.divxtotal.com/buscar.php?busqueda=$1 $2 $3 $4 $5 $6 $7 $8 $9"
+	urlfrom="http://www.divxtotal.net/buscar.php?busqueda=$1 $2 $3 $4 $5 $6 $7 $8 $9"
 fi
 
 echo "Descargando portada de DivxTotal..."
@@ -238,8 +238,8 @@ docurl "$urlfrom" "/tmp/divxtotaltemp.txt"
 
 #Shall we fetch more pages than just the first?
 if $fetchmore; then
-	docurl "http://www.divxtotal.com/serie/page/2/" "/tmp/divxtotaltemp2.txt"
-	docurl "http://www.divxtotal.com/serie/page/3/" "/tmp/divxtotaltemp3.txt"
+	docurl "http://www.divxtotal.net/series/page/2/" "/tmp/divxtotaltemp2.txt"
+	docurl "http://www.divxtotal.net/series/page/3/" "/tmp/divxtotaltemp3.txt"
 	cat /tmp/divxtotaltemp2.txt >> /tmp/divxtotaltemp.txt
 	cat /tmp/divxtotaltemp3.txt >> /tmp/divxtotaltemp.txt
 fi
