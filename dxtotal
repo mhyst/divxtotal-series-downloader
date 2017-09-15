@@ -3,8 +3,9 @@
 SERVER="192.168.0.10:9091 --auth admin:admin"
 DIR=~/bin/scripts/series/titles/
 LOGFILE=~/bin/scripts/dxtotal/log
+WEBADDRESS="www.divxtotal1.net/"
 
-VERSION="0.3.1"
+VERSION="1.2.0"
 
 echo "dxtotal $VERSION - Copyleft (GPL v3) Julio Serrano 2016"
 echo "Revisar nuevas series en DivxTotal y descargar las indicadas"
@@ -223,12 +224,12 @@ function check {
 
 fetchmore=false
 if [[ $1 = "" ]]; then
-	urlfrom="http://www.divxtotal.net/series/"
+	urlfrom="http://$WEBADDRESS/series/"
 	fetchmore=true
 elif [[ $1 == "-u" ]]; then
 	urlfrom="$2"
 else
-	urlfrom="http://www.divxtotal.net/buscar.php?busqueda=$1 $2 $3 $4 $5 $6 $7 $8 $9"
+	urlfrom="http://$WEBADDRESS/buscar.php?busqueda=$1 $2 $3 $4 $5 $6 $7 $8 $9"
 fi
 
 echo "Descargando portada de DivxTotal..."
@@ -238,8 +239,8 @@ docurl "$urlfrom" "/tmp/divxtotaltemp.txt"
 
 #Shall we fetch more pages than just the first?
 if $fetchmore; then
-	docurl "http://www.divxtotal.net/series/page/2/" "/tmp/divxtotaltemp2.txt"
-	docurl "http://www.divxtotal.net/series/page/3/" "/tmp/divxtotaltemp3.txt"
+	docurl "http://$WEBADDRESS/series/page/2/" "/tmp/divxtotaltemp2.txt"
+	docurl "http://$WEBADDRESS/series/page/3/" "/tmp/divxtotaltemp3.txt"
 	cat /tmp/divxtotaltemp2.txt >> /tmp/divxtotaltemp.txt
 	cat /tmp/divxtotaltemp3.txt >> /tmp/divxtotaltemp.txt
 fi
