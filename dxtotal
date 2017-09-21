@@ -224,7 +224,7 @@ function check {
 
 fetchmore=false
 if [[ $1 = "" ]]; then
-	urlfrom="http://$WEBADDRESS/series/"
+	urlfrom="http://$WEBADDRESS/serie/"
 	fetchmore=true
 elif [[ $1 == "-u" ]]; then
 	urlfrom="$2"
@@ -239,8 +239,8 @@ docurl "$urlfrom" "/tmp/divxtotaltemp.txt"
 
 #Shall we fetch more pages than just the first?
 if $fetchmore; then
-	docurl "http://$WEBADDRESS/series/page/2/" "/tmp/divxtotaltemp2.txt"
-	docurl "http://$WEBADDRESS/series/page/3/" "/tmp/divxtotaltemp3.txt"
+	docurl "http://$WEBADDRESS/serie/page/2/" "/tmp/divxtotaltemp2.txt"
+	docurl "http://$WEBADDRESS/serie/page/3/" "/tmp/divxtotaltemp3.txt"
 	cat /tmp/divxtotaltemp2.txt >> /tmp/divxtotaltemp.txt
 	cat /tmp/divxtotaltemp3.txt >> /tmp/divxtotaltemp.txt
 fi
