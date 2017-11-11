@@ -3,8 +3,8 @@
 SERVER="192.168.0.10:9091 --auth admin:admin"
 DIR=~/bin/scripts/series/titles/
 LOGFILE=~/bin/scripts/dxtotal/log
-WEBADDRESS="www.divxtotal1.net"
-SERIESURI="series-torrent"
+WEBADDRESS="www.divxtotal2.net"
+SERIESURI="series"
 
 VERSION="1.2.1"
 
@@ -110,8 +110,9 @@ function isDownloaded {
 	echo "Nombre: $serie, Episodio: $episode" >&2
 	serie=`unaccent utf-8 "$serie"`
 
+	local pserie=$(prepareSearch "$serie")
 	#Le preguntamos a transmission si ya tiene el archivo
-	res=`transmission-remote $SERVER --list | tr . " " | grep -i "$serie" | grep "$episode"`
+	res=`transmission-remote $SERVER --list | tr . " " | grep -i "$pserie" | grep "$episode"`
 	
 	#echo "$res" >&2
 	if [[ ${#res} > 0 ]]; then
@@ -187,12 +188,17 @@ function check {
 	#echo "$series"
 	#echo "Fin depuración"
 
-	echo "Descargando página de $series"
-	#Extraemos la url de la etiqueta href
-	local url=`echo "$line" | grep -Po "href='.*?'" | sed "s/\(href='\|'\)//g"`
-	echo ">>> URL: $url"
+	if $islocal; then
+		echo "Accediendo a página personalizada solicitada..."
+		cp /tmp/divxtotal.txt /tmp/divxtotal3.txt
+	else
+		echo "Descargando página de $series"
+		#Extraemos la url de la etiqueta href
+		local url=`echo "$line" | grep -Po "href='.*?'" | sed "s/\(href='\|'\)//g"`
+		echo ">>> URL: $url"
 
-	docurl "$url" "/tmp/divxtotal3.txt"
+		docurl "$url" "/tmp/divxtotal3.txt"
+	fi
 	#curl "http://www.divxtotal.com$url" > /tmp/divxtotal3.txt
 	#iconv --from-code=ISO-8859-1 --to-code=utf-8 /tmp/divxtotal3.txt > /tmp/divxtotal4.txt
 	#local url2=`cat /tmp/divxtotal3.txt | grep "$name" | grep '<a href="/torrents_tor/*' | grep -Po 'href=".*?"' | sed 's/\(href="\|"\)//g'`
@@ -223,12 +229,32 @@ function check {
 	rm /tmp/divxtotal3.txt
 }
 
+function prepareSearch() {
+	local serie="$1"
+
+	local s=""
+
+	for (( i=0; i<${#serie}; i++ )); do
+	 	c="${serie:$i:1}"
+	  	if [[ $c == " " ]]; then
+		  	s="$s[_-. ]"
+		else
+			s="$s$c"
+	  	fi
+	done
+	echo "$s"
+}
+
+islocal=false
+localurl=""
 fetchmore=false
 if [[ $1 = "" ]]; then
 	urlfrom="http://$WEBADDRESS/$SERIESURI/"
 	fetchmore=true
 elif [[ $1 == "-u" ]]; then
 	urlfrom="$2"
+	islocal=true
+	localurl="$urlfrom"
 else
 	urlfrom="http://$WEBADDRESS/buscar.php?busqueda=$1 $2 $3 $4 $5 $6 $7 $8 $9"
 fi
@@ -246,8 +272,13 @@ if $fetchmore; then
 	cat /tmp/divxtotaltemp3.txt >> /tmp/divxtotaltemp.txt
 fi
 
-#curl "$urlfrom" | grep -Po '<a onmouseover="javascript:cambia_series.*?</a>' > /tmp/divxtotal.txt
-cat /tmp/divxtotaltemp.txt | grep -Po '<p class="seccontnom">.*?</p>' > /tmp/divxtotal.txt
+if $islocal; then
+	#http://www.divxtotal2.net/wp-content/uploads/2017/11/El.largo_.camino.a.casa_.1x02.DivxTotaL.avi.torrent
+	cat /tmp/divxtotaltemp.txt | grep "href=\"http://$WEBADDRESS/wp-content/uploads/" > /tmp/divxtotal.txt
+else
+	#curl "$urlfrom" | grep -Po '<a onmouseover="javascript:cambia_series.*?</a>' > /tmp/divxtotal.txt
+	cat /tmp/divxtotaltemp.txt | grep -Po '<p class="seccontnom">.*?</p>' > /tmp/divxtotal.txt
+fi
 
 
 #FILESIZE=$(stat -c%s "/tmp/divxtotal.txt")
@@ -272,6 +303,10 @@ while read line; do
 	#Queremos la etiqueta title, pero sólo su contenido
 	name=`echo "$line" | grep -Po '">.*?</a>' | sed 's/\(">\|<\/a>\)//g'`
 	if [[ $name != "Series" ]]; then
+
+		if [[ ${name:0:4} == "<img" ]]; then
+			continue
+		fi
 		#name=${name%?}
 		name="$(echo -e "${name}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
     	echo ">$name<"
